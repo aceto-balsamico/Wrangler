@@ -3,7 +3,12 @@
 
 int custom_strlen(char* str)
 {
+    if(str == NULL)
+    {
+        return -1;
+    }
     int char_index = 0;
+
     while(str[char_index] != '\0')
     {
         char_index++;
@@ -13,7 +18,12 @@ int custom_strlen(char* str)
 
 int custom_strcpy(char* dst, char* src)
 {
+    if(dst == NULL || src == NULL)
+    {
+        return -1;
+    }
     int char_index = 0;
+
     while(src[char_index] != '\0')
     {
         dst[char_index] = src[char_index];
@@ -25,12 +35,21 @@ int custom_strcpy(char* dst, char* src)
 
 void custom_strcat(char* dst, char* src)
 {
-    int dst_length = custom_strlen(dst);
+    if(dst == NULL || src == NULL)
+    {
+        return;
+    }
+    int dst_length = 0;
+    dst_length = custom_strlen(dst);
     custom_strcpy(&dst[dst_length], src);
 }
 
 int custom_strcmp(char* str1, char* str2)
 {
+    if(str1 == NULL || str2 == NULL)
+    {
+        return -1;
+    }
     int char_index = 0;
     while(str1[char_index] != '\0' && str2[char_index] != '\0')
     {
@@ -49,6 +68,10 @@ int custom_strcmp(char* str1, char* str2)
 
 int custom_strstr(char* origin_str, char* search_str)
 {
+    if(origin_str == NULL || search_str == NULL)
+    {
+        return -1;
+    }
     int char_index = 0;
     char check_str[128] = {};
     int search_length = custom_strlen(search_str);
