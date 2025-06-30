@@ -23,6 +23,14 @@ int custom_strcpy(char* dst, char* src)
     return char_index;
 }
 
+
+void custom_strcat(char* dst, char* src)
+{
+    int dst_length = custom_strlen(dst);
+    int src_length = custom_strlen(src);
+    custom_strcpy(&dst[dst_length], src);
+}
+
 int custom_strcmp(char* str1, char* str2)
 {
     int char_index = 0;
@@ -41,12 +49,20 @@ int custom_strcmp(char* str1, char* str2)
     return 0; 
 }
 
-void custom_strcat(char* dst, char* src)
+int custom_strstr(char* str, char search_char)
 {
-    int dst_length = custom_strlen(dst);
-    int src_length = custom_strlen(src);
-    custom_strcpy(&dst[dst_length], src);
+    int char_index = 0;
+    while(str[char_index] != '\0')
+    {
+        if(str[char_index] == search_char)
+        {
+            return char_index;
+        }
+        char_index++;
+    }
+    return -1;
 }
+
 
 int  main()
 {
@@ -60,6 +76,16 @@ int  main()
     printf("Copied String: %s\n", str3);
     custom_strcat(str3, str2);
     printf("Concatenated String: %s\n", str3);
+
+    int index = custom_strstr(str3, 'W');
+    if (index != -1) 
+    {
+        printf("Found 'W' at index: %d\n", index);
+    } 
+    else 
+    {
+        printf("'W' not found\n");
+    }
 
     char* string1 = "Hello1";
     char* string2 = "Hello";
