@@ -74,7 +74,7 @@ int custom_strcmp(char* str1, char* str2)
     {
         return -1;
     }
-    
+
     int char_index = 0;
     while(str1[char_index] != '\0' && str2[char_index] != '\0')
     {
@@ -91,7 +91,7 @@ int custom_strcmp(char* str1, char* str2)
     return 0; 
 }
 
-int custom_strcmp_advanced(char* array, char* reference)
+int custom_strcmp_advanced_64Byte(char* array, char* reference)
 {
     if(array == NULL || reference == NULL)
     {
@@ -163,7 +163,7 @@ int  main()
     int check_equal = 0;
     for(int i = 0; i < 1000000; i++)
     {
-        custom_strcmp(str1, str2);
+        custom_strcmp_advanced_64Byte(str1, str2);
     }
     // int check_equal = custom_strcmp_advanced("hello", "NULL");
     double elapsed_time = get_time_sec() - current_time;
