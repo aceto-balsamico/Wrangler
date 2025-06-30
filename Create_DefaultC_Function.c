@@ -23,11 +23,9 @@ int custom_strcpy(char* dst, char* src)
     return char_index;
 }
 
-
 void custom_strcat(char* dst, char* src)
 {
     int dst_length = custom_strlen(dst);
-    int src_length = custom_strlen(src);
     custom_strcpy(&dst[dst_length], src);
 }
 
@@ -49,12 +47,21 @@ int custom_strcmp(char* str1, char* str2)
     return 0; 
 }
 
-int custom_strstr(char* str, char search_char)
+int custom_strstr(char* origin_str, char* search_str)
 {
     int char_index = 0;
-    while(str[char_index] != '\0')
+    char check_str[128] = {};
+    int search_length = custom_strlen(search_str);
+    if(search_length > sizeof(check_str) - 1)
     {
-        if(str[char_index] == search_char)
+        return -1; // Not Supported search_str length
+    }
+
+    while (origin_str[char_index] != '\0')
+    {
+        custom_strcpy(check_str, &origin_str[char_index]);
+        check_str[search_length] = '\0';
+        if (custom_strcmp(check_str, search_str) == 0)
         {
             return char_index;
         }
@@ -77,14 +84,14 @@ int  main()
     custom_strcat(str3, str2);
     printf("Concatenated String: %s\n", str3);
 
-    int index = custom_strstr(str3, 'W');
-    if (index != -1) 
+    int index = custom_strstr(str3, "World");
+    if (index != -1)
     {
-        printf("Found 'W' at index: %d\n", index);
-    } 
-    else 
+        printf("Found 'World' at index: %d\n", index);
+    }
+    else
     {
-        printf("'W' not found\n");
+        printf("'World' not found in the string.\n");
     }
 
     char* string1 = "Hello1";
