@@ -6,7 +6,9 @@
 	],
 	"settings": {
 		"files.associations": {
-			"custom_common.h": "c"
-		}
+			"custom_common.h": "c",
+			"cstdio": "c"
+		},
+		"code-runner.runInTerminal": false
 	}
 }

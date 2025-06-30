@@ -76,6 +76,23 @@ void setLastFunction(const char *currentFunc, const char *label)
     lastFuncLabel = label;      // **呼び出し元のラベル情報を維持**
     lastFuncName = currentFunc; // **呼び出し元の関数名を維持**
 }
+// #include <execinfo.h>  // Linuxでは backtrace_symbols()
+const char* getCallerSymbol() 
+{
+    void *caller = __builtin_return_address(0);
+    
+    // この例ではアドレス文字列をそのまま返す（本番ではマッピング辞書に変換）
+    static char buf[32];
+    snprintf(buf, sizeof(buf), "%p", caller);
+    return buf;
+}
+
+void WrapFunc()
+{
+    const char* callerSymbol = getCallerSymbol(); // **コール元のアドレスを取得**
+    printf("WrapFunc called from %s\n", callerSymbol);
+    // setLastFunction(__func__, "Wrap");
+}
 void FuncA()
 {
     setLastFunction(__func__, "Entry");
@@ -84,6 +101,8 @@ void FuncA()
     OperationFunction(); // **FuncA_Mid → 次の関数**
     setLastFunction(__func__, "Exit");
     OperationFunction(); // **FuncA_Exit → 次の関数**
+    printf("WrapFunc called from %s\n", getCallerSymbol());
+    printf("FuncA called from %X\n", FuncA);
 }
 
 void FuncB()
@@ -94,6 +113,7 @@ void FuncB()
     OperationFunction();
     setLastFunction(__func__, "Exit");
     OperationFunction();
+    // printf("WrapFunc called from %s\n", getCallerSymbol());
 }
 
 void FuncC()
@@ -175,7 +195,7 @@ int main()
 {
     srand((unsigned int)time(NULL));
 
-    int LoopCount = 1000;
+    int LoopCount = 10;
     double start = get_time();
     for (int TestLoop = 0; TestLoop < LoopCount; TestLoop++)
     {
