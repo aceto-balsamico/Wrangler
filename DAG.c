@@ -358,8 +358,147 @@ void debug_print_routes(const PathDAG* graph, bool is_enabled, uint64_t max_disp
 
     printf("------------------------------------------\n\n");
 }
+// ソート用の一時構造体（1本の経路データと元の経路番号を保持）
+typedef struct
+{
+    uint64_t original_path_id;
+    int step_count;
+    int node_values[MAX_LAYERS];
+    int node_layers[MAX_LAYERS];
+} RouteRecord;
 
+// デバッグ用：経路一覧を綺麗な昇順にソートして表示（max_display_count が 0 なら全件表示）
+void debug_print_routes_sorted(const PathDAG* graph, bool is_enabled, uint64_t max_display_count)
+{
+    if (!is_enabled || graph->total_paths == 0)
+    {
+        return;
+    }
 
+    const uint64_t MAX_SORTABLE_ROUTES = 100000;
+    uint64_t display_limit = graph->total_paths;
+
+    if (max_display_count > 0 && max_display_count < display_limit)
+    {
+        display_limit = max_display_count;
+    }
+    if (display_limit > MAX_SORTABLE_ROUTES)
+    {
+        display_limit = MAX_SORTABLE_ROUTES;
+    }
+
+    RouteRecord* route_list = (RouteRecord*)malloc(sizeof(RouteRecord) * (size_t)display_limit);
+    if (route_list == NULL)
+    {
+        printf("エラー: 経路ソート用のメモリ確保に失敗しました。\n");
+        return;
+    }
+
+    int temp_node_ids[MAX_LAYERS];
+
+    // 1. 経路を復元して一時配列に格納
+    for (uint64_t path_id = 0; path_id < display_limit; path_id++)
+    {
+        int step_count = get_path_by_id(graph, path_id, temp_node_ids);
+        route_list[path_id].original_path_id = path_id;
+        route_list[path_id].step_count = step_count;
+
+        for (int step_index = 0; step_index < step_count; step_index++)
+        {
+            int node_id = temp_node_ids[step_index];
+            route_list[path_id].node_values[step_index] = graph->node_value[node_id];
+            route_list[path_id].node_layers[step_index] = graph->node_layer[node_id];
+        }
+    }
+
+    // 2. シェルソートでノードの整数値の辞書順（昇順）に並び替え（compare関数不要）
+    int total_records = (int)display_limit;
+    for (int gap = total_records / 2; gap > 0; gap /= 2)
+    {
+        for (int current_index = gap; current_index < total_records; current_index++)
+        {
+            RouteRecord target_record = route_list[current_index];
+            int insert_index = current_index;
+
+            while (insert_index >= gap)
+            {
+                RouteRecord compare_record = route_list[insert_index - gap];
+                bool is_compare_greater = false;
+
+                int min_steps = compare_record.step_count;
+                if (target_record.step_count < min_steps)
+                {
+                    min_steps = target_record.step_count;
+                }
+
+                // 各レイヤーの値を先頭から比較
+                bool is_decided = false;
+                for (int step_index = 0; step_index < min_steps; step_index++)
+                {
+                    if (compare_record.node_values[step_index] > target_record.node_values[step_index])
+                    {
+                        is_compare_greater = true;
+                        is_decided = true;
+                        break;
+                    }
+                    if (compare_record.node_values[step_index] < target_record.node_values[step_index])
+                    {
+                        is_compare_greater = false;
+                        is_decided = true;
+                        break;
+                    }
+                }
+
+                // 途中まで値がすべて同じ場合は、経路が長い方を後ろに回す
+                if (!is_decided && compare_record.step_count > target_record.step_count)
+                {
+                    is_compare_greater = true;
+                }
+
+                if (!is_compare_greater)
+                {
+                    break;
+                }
+
+                route_list[insert_index] = route_list[insert_index - gap];
+                insert_index -= gap;
+            }
+
+            route_list[insert_index] = target_record;
+        }
+    }
+
+    // 3. 綺麗に整列された状態で画面出力
+    printf("--- 経路一覧【昇順ソート済】 (全 %llu 通り中 %llu 件表示) ---\n",
+           (unsigned long long)graph->total_paths,
+           (unsigned long long)display_limit);
+
+    for (uint64_t record_index = 0; record_index < display_limit; record_index++)
+    {
+        RouteRecord current_record = route_list[record_index];
+        printf("経路[ID:%4llu]: ", (unsigned long long)current_record.original_path_id);
+
+        for (int step_index = 0; step_index < current_record.step_count; step_index++)
+        {
+            int layer_id = current_record.node_layers[step_index];
+            int node_val = current_record.node_values[step_index];
+            const char* separator = (step_index == current_record.step_count - 1) ? "" : " -> ";
+
+            printf("%s=%d%s", graph->layer_names[layer_id], node_val, separator);
+        }
+        printf("\n");
+    }
+
+    if (display_limit < graph->total_paths)
+    {
+        uint64_t omitted_count = graph->total_paths - display_limit;
+        printf("... (以下 %llu 件省略)\n", (unsigned long long)omitted_count);
+    }
+
+    printf("------------------------------------------------------------\n\n");
+
+    free(route_list);
+}
 // 指定したレイヤーに属するノードの「値」をランダムにシャッフルする
 // ※必ず add_edge で接続を行う前に呼び出すこと
 void shuffle_layer_nodes(PathDAG* graph, int target_layer)
@@ -414,7 +553,7 @@ int main(void)
 
     add_nodes_sequence(graph, 1, 10, 20);
     add_nodes_sequence(graph, 2, 100, 101);
-    // shuffle_layer_nodes(graph, 1);
+    shuffle_layer_nodes(graph, 1);
 
     add_edge_by_value_range(graph, 0, 1, 2,     1, 10, 20);
     // add_edge_by_value_range(graph, 0, 2, 2,     1, 12, 15);
@@ -425,6 +564,7 @@ int main(void)
 
     debug_print_graph(graph, IS_DEBUG_MODE);
     debug_print_routes(graph, IS_DEBUG_MODE, 0);
+    debug_print_routes_sorted(graph, IS_DEBUG_MODE, 0);
 
     uint64_t layer1_paths = count_paths_from_layer(graph, 1);
     printf("ParamA(Layer 1) 起点の総経路数: %llu 通り\n", (unsigned long long)layer1_paths);
